@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <script>window.MathJax={tex:{inlineMath:[['$','$']],processEscapes:true},svg:{fontCache:'global'}};</script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.js"></script>
+    <title>Quiz Gestion de Portefeuille – Master IEF</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --surface: #1e293b;
+            --surface-hover: #334155;
+            --primary: #3b82f6;
+            --primary-glow: rgba(59, 130, 246, 0.5);
+            --accent: #f59e0b; /* Gold/Incontournable */
+            --accent-glow: rgba(245, 158, 11, 0.6);
+            --success: #10b981;
+            --danger: #ef4444;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --radius: 12px;
+            --transition: all 0.2s ease;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation: none !important;
+                transition: none !important;
+            }
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        #app {
+            width: 100%;
+            max-width: 720px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* HEADER & STATUS BAR */
+        header {
+            position: sticky;
+            top: 0;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--surface);
+        }
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .header-title { font-size: 1.1rem; font-weight: bold; }
+        .chips-container {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            font-size: 0.85rem;
+        }
+        .chip {
+            background: var(--surface);
+            padding: 4px 10px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+        }
+        .chip-level { border: 1px solid var(--primary); }
+        .chip-combo { transition: var(--transition); }
+        .combo-active { color: #f97316; text-shadow: 0 0 8px rgba(249,115,22,0.6); border: 1px solid #f97316; }
+        
+        .progress-bar-container {
+            width: 100%;
+            height: 4px;
+            background: var(--surface);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+        #xp-bar {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .icon-btn {
+            background: none; border: none; color: var(--text-main);
+            font-size: 1.2rem; cursor: pointer; padding: 4px;
+        }
+
+        /* SCREENS */
+        .screen { display: none; padding: 20px; flex: 1; animation: fadeIn 0.3s ease; }
+        .screen.active { display: flex; flex-direction: column; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* HOME SCREEN */
+        .home-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        h1 { font-size: 1.5rem; margin-bottom: 10px; color: var(--primary); }
+        p.subtitle { color: var(--text-muted); margin-bottom: 20px; font-size: 0.95rem; line-height: 1.5; }
+        
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: bold; font-size: 0.9rem; }
+        select, button.main-btn {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--surface-hover);
+            background: var(--bg-color);
+            color: var(--text-main);
+            font-size: 1rem;
+            outline: none;
+        }
+        select { cursor: pointer; }
+        button.main-btn {
+            background: var(--primary);
+            color: white;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-top: 10px;
+        }
+        button.main-btn:active { transform: scale(0.98); }
+        button.main-btn:hover { box-shadow: 0 0 15px var(--primary-glow); }
+
+        /* QUESTION SCREEN */
+        .question-meta {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+        .tag-theme { background: var(--surface); padding: 4px 8px; border-radius: 4px; }
+        .tag-diff { padding: 4px 8px; border-radius: 4px; font-weight: bold; }
+        .diff-1 { color: #4ade80; } .diff-2 { color: #facc15; } .diff-3 { color: #f87171; }
+        
+        .question-card {
+            background: var(--surface);
+            padding: 25px 20px;
+            border-radius: var(--radius);
+            margin-bottom: 20px;
+            border: 2px solid transparent;
+            transition: var(--transition);
+            position: relative;
+        }
+        .question-card.is-bonus {
+            border-color: var(--accent);
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+        .question-text { font-size: 1.15rem; line-height: 1.5; margin-bottom: 20px; }
+        
+        .options-grid { display: grid; gap: 10px; }
+        .option-btn {
+            background: var(--bg-color);
+            border: 1px solid var(--surface-hover);
+            padding: 15px;
+            border-radius: 8px;
+            color: var(--text-main);
+            text-align: left;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+        }
+        .option-btn:hover { background: var(--surface-hover); }
+        .option-btn.selected { border-color: var(--primary); }
+        .option-btn.correct { background: rgba(16, 185, 129, 0.2); border-color: var(--success); }
+        .option-btn.wrong { background: rgba(239, 68, 68, 0.2); border-color: var(--danger); }
+        
+        .shortcut-badge {
+            background: var(--surface-hover);
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+
+        .action-bar { display: flex; gap: 10px; margin-top: 15px; }
+        .btn-skip { background: transparent; border: 1px solid var(--surface-hover); color: var(--text-muted); flex: 1; padding: 12px; border-radius: 8px; cursor: pointer; }
+        .btn-skip:hover { background: var(--surface); }
+
+        /* FEEDBACK SCREEN */
+        .feedback-box {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: var(--radius);
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        .feedback-box.show { display: block; }
+        .feedback-correct { background: rgba(16, 185, 129, 0.1); border-left: 4px solid var(--success); }
+        .feedback-wrong { background: rgba(239, 68, 68, 0.1); border-left: 4px solid var(--danger); }
+        .feedback-skip { background: rgba(148, 163, 184, 0.1); border-left: 4px solid var(--text-muted); }
+        
+        .feedback-header { font-weight: bold; font-size: 1.1rem; margin-bottom: 8px; display: flex; justify-content: space-between;}
+        .feedback-text { font-size: 0.95rem; line-height: 1.5; color: #cbd5e1;}
+        .feedback-text b { color: var(--text-main); }
+
+        /* END SCREEN */
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0; }
+        .stat-box { background: var(--surface); padding: 15px; border-radius: var(--radius); text-align: center; }
+        .stat-val { font-size: 1.5rem; font-weight: bold; color: var(--primary); }
+        .stat-label { font-size: 0.8rem; color: var(--text-muted); }
+        
+        .badges-container { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; justify-content: center;}
+        .badge { background: rgba(245, 158, 11, 0.15); border: 1px solid var(--accent); color: var(--accent); padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; display: flex; align-items: center; gap: 5px;}
+        
+        .missed-list { margin-top: 20px; display: none;}
+        .missed-item { background: var(--surface); margin-bottom: 10px; padding: 15px; border-radius: 8px; border-left: 3px solid var(--danger); font-size: 0.9rem;}
+        .missed-item p { margin-bottom: 5px; }
+
+        /* ANIMATIONS & EFFECTS */
+        .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        .floating-xp {
+            position: absolute;
+            color: var(--success);
+            font-weight: bold;
+            font-size: 1.2rem;
+            pointer-events: none;
+            animation: floatUp 1s ease-out forwards;
+            z-index: 1000;
+        }
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-50px) scale(1.5); }
+        }
+
+        .confetti {
+            position: absolute;
+            width: 8px; height: 8px;
+            background: var(--accent);
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        /* TOAST */
+        #toast {
+            position: fixed;
+            bottom: -60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--surface-hover);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            transition: bottom 0.3s ease;
+            z-index: 2000;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        #toast.show { bottom: 30px; }
+
+        body { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+        header { top: env(safe-area-inset-top, 0px); }
+        mjx-container { font-size: 1.05em; }
+        .option-btn mjx-container, .feedback-text mjx-container { max-width: 100%; overflow-x: auto; overflow-y: hidden; }
+        details.lexique { background: var(--bg-color); border-radius: 8px; padding: 12px 14px; margin: 5px 0 10px; font-size: 0.9rem; line-height: 1.7; }
+        details.lexique summary { cursor: pointer; font-weight: bold; color: var(--primary); }
+        details.lexique li { margin-left: 18px; color: #cbd5e1; }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <header>
+        <div class="header-top">
+            <div class="header-title">Master IEF - Réviseur</div>
+            <button class="icon-btn" id="btn-mute" onclick="toggleMute()">🔊</button>
+        </div>
+        <div class="chips-container">
+            <div class="chip chip-level" id="ui-level">🌱 Stagiaire (Lvl 1)</div>
+            <div class="chip chip-combo" id="ui-combo">🔥 x0</div>
+            <div class="chip" id="ui-score">Score: 0</div>
+            <div class="chip" id="ui-progress">0/0</div>
+        </div>
+        <div class="progress-bar-container">
+            <div id="xp-bar"></div>
+        </div>
+    </header>
+
+    <!-- ACCUEIL -->
+    <div class="screen active" id="screen-home">
+        <div class="home-card">
+            <h1>Examen: Gestion de Portefeuille</h1>
+            <p class="subtitle">Barème: Juste <b>+0.5</b> | Faux <b>-0.25</b> | Passe <b>0</b>.<br>Questions incontournables = <b>XP Doublée ⚡</b></p>
+            
+            <div class="form-group">
+                <label>Mode de jeu</label>
+                <select id="sel-mode">
+                    <option value="all">Tout le programme</option>
+                    <option value="incontournables">Les incontournables ⚡</option>
+                    <option value="expert">Niveau Expert (Diff 3)</option>
+                    <option value="ratees">Mes ratées (Revanche)</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Nombre de questions</label>
+                <select id="sel-count">
+                    <option value="10">10 questions</option>
+                    <option value="20" selected>20 questions</option>
+                    <option value="40">40 questions</option>
+                    <option value="60">Simulateur Examen (60)</option>
+                </select>
+            </div>
+
+            <details class="lexique">
+                <summary>📖 Lexique des notations (à lire si tu débutes)</summary>
+                <ul>
+                    <li>$x_p$, $x_b$ : poids (part en %) d'un secteur dans le <b>p</b>ortefeuille / dans le <b>b</b>enchmark (l'indice de référence)</li>
+                    <li>$r_p$, $r_b$ : rendement du portefeuille / du benchmark</li>
+                    <li>$M$, $S$, $I$ : effets Market timing, Sélection, Interaction (Brinson)</li>
+                    <li>$IR$ : ratio d'information ; $TE$ : tracking error (écart-type de $r_p - r_b$) ; $\sigma$ : volatilité</li>
+                    <li>$T$ : horizon en années ; $t$ : statistique de Student</li>
+                    <li>$D$ : duration ; $D^*$ : duration modifiée ; $\Delta r$ : variation des taux</li>
+                    <li>$A$, $L$ : actif et passif (engagements) ; $f = A/L$ : funding ratio ; $\pi$ : surplus</li>
+                </ul>
+            </details>
+            <button class="main-btn" onclick="startQuiz()">COMMENCER LA SESSION</button>
+        </div>
+    </div>
+
+    <!-- QUESTION -->
+    <div class="screen" id="screen-question">
+        <div class="question-meta">
+            <span class="tag-theme" id="q-theme">Thème</span>
+            <span class="tag-diff" id="q-diff">Niveau 1</span>
+        </div>
+        
+        <div class="question-card" id="q-card">
+            <div class="question-text" id="q-text">Enoncé...</div>
+            <div class="options-grid" id="q-options">
+                <!-- Dynamique -->
+            </div>
+            
+            <div class="action-bar" id="q-actions">
+                <button class="btn-skip" onclick="handleAnswer(-1)">Je passe (P)</button>
+            </div>
+
+            <div class="feedback-box" id="q-feedback">
+                <div class="feedback-header"><span id="fb-title">Verdict</span> <span id="fb-pts">+0.5 pts</span></div>
+                <div class="feedback-text" id="fb-desc">Explication...</div>
+                <button class="main-btn" id="btn-next" onclick="nextQuestion()" style="margin-top: 15px;">Question suivante (Entrée)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FIN -->
+    <div class="screen" id="screen-end">
+        <div class="home-card" style="text-align: center;">
+            <h1 id="end-title">Session Terminée !</h1>
+            
+            <div class="stats-grid">
+                <div class="stat-box"><div class="stat-val" id="end-score">15/20</div><div class="stat-label">Note équivalente</div></div>
+                <div class="stat-box"><div class="stat-val" id="end-accuracy">75%</div><div class="stat-label">Précision</div></div>
+                <div class="stat-box"><div class="stat-val" id="end-correct" style="color:var(--success)">0</div><div class="stat-label">Justes</div></div>
+                <div class="stat-box"><div class="stat-val" id="end-wrong" style="color:var(--danger)">0</div><div class="stat-label">Fausses</div></div>
+            </div>
+
+            <div class="badges-container" id="end-badges"></div>
+
+            <button class="main-btn" onclick="showScreen('home')">NOUVELLE SÉRIE</button>
+            <button class="btn-skip" onclick="startQuiz('ratees')" id="btn-retry-missed" style="display:none; width:100%; margin-top:10px;">Refaire seulement les ratées</button>
+            
+            <div class="missed-list" id="end-missed">
+                <h3 style="margin-bottom: 10px; color: var(--danger); font-size:1.1rem;">À revoir absolument :</h3>
+                <div id="missed-items-container"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="toast">⭐ Niveau Supérieur !</div>
+
+<script>
+/* =========================================================================
+   BASE DE DONNÉES DES QUESTIONS (65 Questions, 100% basées sur les PDF)
+   ========================================================================= */
+const DB = [
+    // --- THEME 1: ATTRIBUTION DE PERFORMANCE (BRINSON & EXCEL TD) ---
+    { id:1, theme:"Attribution de performance", level:1, bonus:true, type:"qcm",
+      text:"Selon l'approche de Brinson (1998), quelles sont les 3 composantes de la performance ?",
+      options:["L'allocation stratégique, le market timing, la sélection des titres","L'allocation tactique, la duration, le market timing","Le stock picking, le tracking error, le choix du benchmark","L'interaction, le market timing, l'effet devise"], answer:0,
+      expl:"Les 3 composantes sont l'allocation stratégique (choix du benchmark), le market timing (sur/sous-pondérations) et la sélection (choix des titres)." },
+    { id:2, theme:"Attribution de performance", level:1, bonus:false, type:"tf",
+      text:"Le choix du benchmark détermine l'allocation tactique du portefeuille.",
+      options:["Vrai","Faux"], answer:1,
+      expl:"<b>Faux</b>. Le choix du benchmark détermine l'<b>allocation stratégique</b> (long terme). L'allocation tactique relève du market timing et de la sélection (court terme)." },
+    { id:3, theme:"Attribution de performance", level:2, bonus:true, type:"qcm",
+      text:"Quelle est la formule du rendement du market timing (M) ?",
+      options:["$M = \\sum x_p \\, (r_p - r_b)$","$M = \\sum x_b \\, (r_p - r_b)$","$M = \\sum r_b \\, (x_p - x_b)$","$M = \\sum (x_p - x_b)(r_p - r_b)$"], answer:2,
+      expl:"Le market timing évalue les choix de pondération sectorielle : <b>$M = \\sum r_b \\, (x_p - x_b)$</b>." },
+    { id:4, theme:"Attribution de performance", level:2, bonus:false, type:"qcm",
+      text:"Quelle est la formule de l'effet de sélection (S) ?",
+      options:["$S = \\sum r_p \\, (x_p - x_b)$","$S = \\sum x_b \\, (r_p - r_b)$","$S = \\sum x_p \\, (r_p - r_b)$","$S = \\sum r_b \\, (x_p - x_b)$"], answer:1,
+      expl:"La sélection évalue les choix de titres au sein d'un secteur, à pondération neutre : <b>$S = \\sum x_b \\, (r_p - r_b)$</b>." },
+    { id:5, theme:"Attribution de performance", level:2, bonus:false, type:"qcm",
+      text:"Que représente le terme d'interaction (I) dans la décomposition de Brinson ?",
+      options:["$I = \\sum x_p \\, r_b$","$I = \\sum (x_p - x_b)(r_p - r_b)$","$I = M + S$","$I = \\sum x_b \\, (r_p - r_b)$"], answer:1,
+      expl:"L'interaction croise l'écart de pondération et l'écart de rendement : <b>$I = \\sum (x_p - x_b)(r_p - r_b)$</b>." },
+    { id:6, theme:"Attribution de performance", level:3, bonus:true, type:"qcm",
+      text:"Calcul: Dans le secteur Consommation, le poids au benchmark est 40% et en portefeuille 20%. Le rendement du secteur au benchmark est 7%. Quelle est la contribution au market timing de ce secteur ?",
+      options:["-1.4%","1.4%","-0.4%","2.0%"], answer:0,
+      expl:"$M = r_b (x_p - x_b) = 7\\% \\times (20\\% - 40\\%) = 7\\% \\times (-20\\%) = \\mathbf{-1.4\\%}$." },
+    { id:7, theme:"Attribution de performance", level:3, bonus:false, type:"qcm",
+      text:"Calcul: Dans le secteur Services, le poids au benchmark est 35%. Rendement portefeuille = 6%, rendement benchmark = 9%. Quelle est la contribution à l'effet sélection ?",
+      options:["1.05%","-1.05%","-3.0%","-2.10%"], answer:1,
+      expl:"$S = x_b (r_p - r_b) = 35\\% \\times (6\\% - 9\\%) = 35\\% \\times (-3\\%) = \\mathbf{-1.05\\%}$." },
+    { id:8, theme:"Attribution de performance", level:2, bonus:false, type:"tf",
+      text:"Dans la méthode alternative utilisée sous Bloomberg pour calculer l'effet de sélection, la référence de pondération est le poids dans le benchmark ($x_b$).",
+      options:["Vrai","Faux"], answer:1,
+      expl:"<b>Faux</b>. Sous Bloomberg, la référence pour la sélection S est le poids du <b>portefeuille ($x_p$)</b>, ce qui élimine le terme d'interaction." },
+    { id:9, theme:"Attribution de performance", level:1, bonus:false, type:"qcm",
+      text:"Selon l'étude de Brinson, Hood & Beebower (1986), quelle part de la performance totale est expliquée en moyenne par la gestion active (timing + sélection + interaction) ?",
+      options:["Environ 10% (1/10e)","Environ 50%","Environ 90%","Près de 100%"], answer:0,
+      expl:"La gestion active n'explique en moyenne qu'environ <b>1/10e de la performance totale</b> (souvent décevant, voire négatif)." },
+    { id:10, theme:"Attribution de performance", level:1, bonus:true, type:"tf",
+      text:"La faible performance de la gestion active (Brinson 1986) s'explique en partie par les limites imposées par la tracking error stricte.",
+      options:["Vrai","Faux"], answer:0,
+      expl:"<b>Vrai</b>. Les fonds sont gérés dans un cadre benchmarké où la liberté du gérant est fortement restreinte par sa Tracking Error." },
+    { id:11, theme:"Attribution de performance (TD)", level:2, bonus:false, type:"qcm",
+      text:"Dans le TD Excel d'attribution de performance, quelle fonction est utilisée pour dénombrer le nombre de titres d'un même secteur après un tri croissant ?",
+      options:["SumProd","CountIf (NB.SI)","VLookup (RECHERCHEV)","Match (EQUIV)"], answer:1,
+      expl:"La fonction <b>CountIf</b> permet de compter les lignes vérifiant la condition d'appartenance au même secteur." },
+    { id:12, theme:"Attribution de performance (TD)", level:2, bonus:false, type:"qcm",
+      text:"Dans le TD, comment calcule-t-on le rendement sectoriel global à l'aide d'Excel ?",
+      options:["Moyenne simple des rendements","SumProd (SOMMEPROD) des parts et des rendements divisée par le poids du secteur","Somme des parts multipliée par l'écart type","Uniquement avec la fonction Yield"], answer:1,
+      expl:"On utilise <b>SumProd</b> pour le numérateur ($\\sum x_j \\, r_j$), que l'on divise ensuite par le poids du secteur $x_s$." },
+    { id:13, theme:"Attribution de performance (TD)", level:3, bonus:false, type:"qcm",
+      text:"Quelle vérification finale effectue-t-on dans le modèle de Brinson ?",
+      options:["$r_p = r_b + \\text{Timing} + \\text{Sélection} + \\text{Interaction}$","$r_p = r_b \\times (\\text{Timing} + \\text{Sélection})$","$r_p = r_b / \\text{Interaction}$","$r_p - r_b = \\text{Timing} \\times \\text{Sélection}$"], answer:0,
+      expl:"L'écart de rendement global ($r_p - r_b$) doit être exactement égal à la somme des 3 effets : <b>$r_p = r_b + S + M + I$</b>." },
+    { id:14, theme:"Attribution de performance", level:3, bonus:false, type:"qcm",
+      text:"Calcul : $x_p = 50\\%$, $x_b = 35\\%$, $r_p = 9\\%$, $r_b = 9\\%$. Calculez le terme d'interaction.",
+      options:["1.5%","0.45%","0.0%","4.5%"], answer:2,
+      expl:"$I = (x_p - x_b)(r_p - r_b)$. Puisque $r_p = r_b$, l'écart de rendement est nul, donc <b>$I = 0\\%$</b>." },
+    { id:15, theme:"Attribution de performance", level:2, bonus:true, type:"qcm",
+      text:"Dans la décomposition $r_p = r_b + M + S + I$, que vaut le terme $M$ si le gérant ne fait aucun pari sectoriel par rapport à son indice ?",
+      options:["Il est égal à la sélection","Il est positif","Il est nul","Il est négatif"], answer:2,
+      expl:"Si $x_p = x_b$ pour tous les secteurs, l'écart ($x_p - x_b$) est nul, donc le market timing <b>$M$ est nul</b>." },
+
+    // --- THEME 2: RATIO D'INFORMATION ---
+    { id:16, theme:"Ratio d'Information", level:1, bonus:true, type:"qcm",
+      text:"Quelle est la définition du ratio d'information (IR) ?",
+      options:["$IR = \\dfrac{E[r_p] - E[r_b]}{E[r_b]}$","$IR = \\dfrac{E[r_p] - r_f}{\\sigma(r_p)}$","$IR = \\dfrac{E[r_p] - E[r_b]}{\\sigma(r_p - r_b)}$","$IR = \\dfrac{E[r_p]}{\\sigma(r_p - r_b)}$"], answer:2,
+      expl:"Le ratio d'information est le rendement excédentaire (sur le benchmark) rapporté à sa volatilité (Tracking Error): <b>$IR = \\dfrac{E[r_p] - E[r_b]}{TE}$</b>." },
+    { id:17, theme:"Ratio d'Information", level:1, bonus:false, type:"tf",
+      text:"Dans une stratégie Core-Satellite, le ratio d'information n'est pas utilisé comme critère de distribution des AUM (Assets Under Management).",
+      options:["Vrai","Faux"], answer:1,
+      expl:"<b>Faux</b>. Le ratio d'information est justement le critère clé pour distribuer les capitaux entre les gérants satellites." },
+    { id:18, theme:"Ratio d'Information", level:2, bonus:false, type:"qcm",
+      text:"Dans l'étude de Goodwin (1998) sur 212 gérants, quelle est la part des gérants ayant un ratio d'information supérieur à 1 ?",
+      options:["Près de 50%","15.09%","0.96%","0%"], answer:2,
+      expl:"Extrêmement rare : seuls <b>0.96%</b> des gérants (soit à peine 2) ont atteint un IR > 1." },
+    { id:19, theme:"Ratio d'Information", level:2, bonus:true, type:"qcm",
+      text:"Selon Goodwin (1998), dans quelle catégorie trouve-t-on la plus forte proportion de gérants avec un IR > 0.5 ?",
+      options:["Large Cap Value","Small Cap","Sector Bonds","EAFE"], answer:1,
+      expl:"La catégorie <b>Small Cap</b> compte 40% de gérants avec un IR > 0.5, suggérant que l'efficience est moindre sur les petites capitalisations." },
+    { id:20, theme:"Ratio d'Information", level:2, bonus:false, type:"qcm",
+      text:"Selon l'étude de Kahn (1999), quelle est la valeur de la médiane de la distribution des IR ?",
+      options:["0.5","0.0","-0.5","1.0"], answer:1,
+      expl:"La médiane (quantile 50) est exactement de <b>0.0</b>. Seul le 1er quartile (top 25%) atteint un IR de 0.5." },
+    { id:21, theme:"Ratio d'Information", level:2, bonus:true, type:"qcm",
+      text:"Comment le ratio d'information évolue-t-il avec l'horizon T ?",
+      options:["$IR_T = \\dfrac{IR}{T}$","$IR_T = \\dfrac{IR}{\\sqrt{T}}$","$IR_T = IR \\times \\sqrt{T}$","$IR_T = IR \\times T$"], answer:2,
+      expl:"Comme le ratio de Sharpe, l'IR croît avec la racine carrée du temps : <b>$IR_T = IR \\times \\sqrt{T}$</b>." },
+    { id:22, theme:"Ratio d'Information", level:3, bonus:false, type:"qcm",
+      text:"Calcul: Un gérant a un ratio d'information (IR) annuel de 0.5. Quel sera son ratio d'information cumulé sur 4 ans ?",
+      options:["1.0","2.0","0.25","0.5"], answer:0,
+      expl:"$IR_T = IR \\times \\sqrt{T} = 0.5 \\times \\sqrt{4} = 0.5 \\times 2 = \\mathbf{1.0}$." },
+    { id:23, theme:"Ratio d'Information", level:3, bonus:false, type:"qcm",
+      text:"Calcul: Un gérant a un IR annuel de 0.25. Quel est son IR sur 16 ans ?",
+      options:["4.0","1.0","2.0","0.5"], answer:1,
+      expl:"$IR_T = IR \\times \\sqrt{16} = 0.25 \\times 4 = \\mathbf{1.0}$." },
+    { id:24, theme:"Ratio d'Information", level:2, bonus:true, type:"qcm",
+      text:"Quelle est la relation entre la statistique t de Student du rendement excédentaire et le Ratio d'Information ?",
+      options:["$t = \\dfrac{IR}{\\sqrt{T}}$","$t = IR \\times \\sqrt{T}$","$t = IR + \\sqrt{T}$","$t = \\dfrac{IR}{T}$"], answer:1,
+      expl:"Le t de Student mesure la significativité statistique : <b>$t = IR \\times \\sqrt{T}$</b>." },
+    { id:25, theme:"Ratio d'Information", level:1, bonus:false, type:"qcm",
+      text:"A partir de quelle valeur la statistique t de Student indique-t-elle généralement que le rendement excédentaire est significativement différent de 0 (seuil 5%) ?",
+      options:["$t > 1.0$","$t > 1.96$","$t > 3.16$","$t > 0.5$"], answer:1,
+      expl:"Pour une loi normale (ou Student avec grand T), le seuil critique bilatéral à 5% est <b>1.96</b>." },
+    { id:26, theme:"Ratio d'Information", level:3, bonus:true, type:"qcm",
+      text:"Pour un gérant ayant un $IR = 0.5$, quelle durée ($T$) est nécessaire pour être certain à 95% que sa sur-performance est significativement positive ?",
+      options:["3 ans","5 ans","10 ans","20 ans"], answer:3,
+      expl:"Pour atteindre $t = 2$ (≈ 1.96) avec $IR = 0.5$, il faut $\\sqrt{T} = \\dfrac{2}{0.5} = 4$. Donc $T = 4^2 = 16$, soit <b>16 à 20 ans</b>." },
+    { id:27, theme:"Ratio d'Information", level:3, bonus:false, type:"qcm",
+      text:"Pour ce même gérant ($IR = 0.5$), combien d'années faut-il pour atteindre un seuil de confiance de 75% ?",
+      options:["5 ans","10 ans","15 ans","20 ans"], answer:1,
+      expl:"Selon les tables, avec $IR = 0.5$, il faut environ <b>10 ans</b> pour être certain à 75%." },
+    { id:28, theme:"Ratio d'Information", level:1, bonus:false, type:"tf",
+      text:"En pratique, la rotation des gérants est souvent trop rapide pour pouvoir mesurer statistiquement leur performance avec 95% de confiance.",
+      options:["Vrai","Faux"], answer:0,
+      expl:"<b>Vrai</b>. Puisqu'il faut entre 15 et 20 ans pour valider un IR de 0.5 avec 95% de confiance, la rotation courante des équipes rend la mesure très incertaine." },
+    { id:29, theme:"Ratio d'Information", level:2, bonus:false, type:"tf",
+      text:"La catégorie 'Large Value' (Goodwin 1998) présente l'IR médian le plus élevé de l'étude.",
+      options:["Vrai","Faux"], answer:1,
+      expl:"<b>Faux</b>. La médiane des 'Large Value' est extrêmement faible (0.02). C'est le Small Cap qui domine (0.43)." },
+    { id:30, theme:"Ratio d'Information", level:2, bonus:false, type:"qcm",
+      text:"Dans l'étude Goodwin, quel secteur obligataire (Sector Bonds) présente le maximum de ratio d'information ?",
+      options:["0.27","0.96","1.41","1.03"], answer:2,
+      expl:"Bien que peu nombreux à surperformer fortement, le score max en <b>Sector Bonds</b> culmine à <b>1.41</b> (plus haut de l'échantillon)." },
+
+    // --- THEME 3: GESTION DELEGUEE & TRACKING ERROR ---
+    { id:31, theme:"Gestion Déléguée", level:1, bonus:true, type:"qcm",
+      text:"Quel est le problème fondamental de la gestion déléguée ?",
+      options:["Le manque de liquidité sur les marchés","Les objectifs de l'agent (gérant) ne coïncident pas toujours avec ceux du principal (client)","L'impossibilité de calculer la tracking error","La fiscalité asymétrique"], answer:1,
+      expl:"C'est le classique conflit d'agence : le <b>principal</b> (client) et l'<b>agent</b> (gérant) ont des objectifs divergents." },
+    { id:32, theme:"Gestion Déléguée", level:1, bonus:false, type:"qcm",
+      text:"Comment la gestion benchmarkée encadre-t-elle l'agent ?",
+      options:["En lui donnant un indice cible, un univers et un écart maximum (TE) à respecter","En interdisant les ventes à découvert","En imposant un rendement garanti","En figeant le portefeuille sur 5 ans"], answer:0,
+      expl:"La solution est d'imposer un <b>indice (benchmark)</b>, une <b>Tracking Error (écart max)</b>, et un bonus lié à la surperformance." },
+    { id:33, theme:"Gestion Déléguée", level:2, bonus:false, type:"tf",
+      text:"La variable de décision du gérant correspond aux écarts de pondération ($u_j$) de chaque titre par rapport au benchmark.",
+      options:["Vrai","Faux"], answer:0,
+      expl:"<b>Vrai</b>. Le gérant décide des distorsions : $x_j = x^B_j + u_j$. Son choix porte donc exclusivement sur le vecteur <b>$u$</b>." },
+    { id:34, theme:"Gestion Déléguée", level:2, bonus:true, type:"qcm",
+      text:"Quelle est l'espérance mathématique de $(r_p - r_B)^2$ en général ?",
+      options:["Elle est strictement positive et grande","Elle approxime la volatilité du marché","Elle est approximativement nulle (≈ 0)","Elle dépend du ratio de Sharpe"], answer:2,
+      expl:"En général, l'espérance du rendement excédentaire au carré est très faible : <b>$E\\left[(r_p - r_b)^2\\right] \\approx 0$</b>, ce qui simplifie le calcul de la TE ex-post." },
+    { id:35, theme:"Gestion Déléguée", level:2, bonus:false, type:"qcm",
+      text:"Formellement, avec $\\Sigma$ la matrice de variances-covariances, comment s'écrit la Tracking Error du portefeuille (TE_p) ?",
+      options:["$TE_p = u^\\top \\Sigma \\, u$","$TE_p = \\sqrt{u^\\top \\Sigma \\, u}$","$TE_p = \\Sigma \\, u$","$TE_p = u / \\Sigma$"], answer:1,
+      expl:"La TE est l'écart-type des rendements excédentaires : <b>$TE_p = \\sqrt{u^\\top \\Sigma \\, u}$</b>." },
+    { id:36, theme:"Gestion Déléguée", level:3, bonus:true, type:"qcm",
+      text:"Que stipule le résultat de Roll (1992) concernant l'efficience du portefeuille géré (benchmark + distorsion u) ?",
+      options:["Le portefeuille sera toujours efficient","Le portefeuille ne sera jamais efficient","L'efficience dépend uniquement de celle du benchmark choisi","L'efficience dépend de la matrice Σ"], answer:2,
+      expl:"La propriété fondamentale (Roll 1992) affirme que l'efficience de la solution optimale <b>dépend entièrement de l'efficience du benchmark</b>." },
+    { id:37, theme:"Gestion Déléguée", level:3, bonus:false, type:"qcm",
+      text:"Dans le programme d'optimisation de la gestion benchmarkée, que représente la contrainte ($u^\\top \\mathbf{1} = 0$) ?",
+      options:["La Tracking error est nulle","La somme des écarts de pondération (sur/sous) doit s'annuler","Le rendement excédentaire est nul","La covariance est nulle"], answer:1,
+      expl:"Puisque la somme des poids du portefeuille = 1 et celle du benchmark = 1, la somme des écarts $u_j$ doit valoir 0 : <b>$\\sum u_j = 0$</b>." },
+    { id:38, theme:"Gestion Déléguée", level:2, bonus:false, type:"qcm",
+      text:"En pratique (selon MSCI Research), dans quelle catégorie observe-t-on les Tracking Errors les plus élevées (> 10%) ?",
+      options:["US Large/Mid Cap Managers","US Small Cap Managers","European Bonds","Money Market"], answer:1,
+      expl:"Les gérants <b>US Small Cap</b> présentent souvent des TE > 10%, reflétant une gestion beaucoup plus active que sur les grandes capitalisations." },
+    { id:39, theme:"Gestion Déléguée", level:1, bonus:false, type:"tf",
+      text:"Les mandats globaux (World) offrent moins de flexibilité au gérant que les mandats US stricts.",
+      options:["Vrai","Faux"], answer:1,
+      expl:"<b>Faux</b>. L'intérêt des mandats globaux est justement d'offrir <b>plus de flexibilité</b> et un univers plus diversifié (générant souvent de meilleures perfs)." },
+    { id:40, theme:"Gestion Déléguée", level:3, bonus:false, type:"qcm",
+      text:"Quel est le principal angle mort théorique ignoré par Roll (1992) dans la gestion déléguée ?",
+      options:["Les frais de transaction","La délégation de décision à l'intérieur d'une organisation complexe (multi-gestion)","Le calcul de la matrice Sigma","La fiscalité des dividendes"], answer:1,
+      expl:"Roll ne traite que la délégation à un gérant unique, ignorant le problème de cohérence de la <b>multi-gestion au sein d'une organisation</b>." },
+
+    // --- THEME 4: DURATION DE MACAULAY ---
+    { id:41, theme:"Duration", level:1, bonus:true, type:"qcm",
+      text:"À qui doit-on le concept de la duration (1938) ?",
+      options:["Harry Markowitz","William Sharpe","Frederick Macaulay","Fischer Black"], answer:2,
+      expl:"L'économiste canadien <b>Frederick Macaulay</b> a formalisé la duration en 1938." },
+    { id:42, theme:"Duration", level:1, bonus:false, type:"qcm",
+      text:"La duration de Macaulay représente :",
+      options:["Le taux de rendement interne d'une obligation","La maturité moyenne des cash-flows, pondérée par leur valeur actualisée","La convexité de l'obligation","La durée de vie fiscale du titre"], answer:1,
+      expl:"La duration est la <b>maturité moyenne des cash-flows</b> calculée en fonction de leur poids dans la VA totale." },
+    { id:43, theme:"Duration", level:2, bonus:true, type:"qcm",
+      text:"Quelle est la relation approchée entre la variation du prix ($\\dfrac{\\Delta q}{q}$) et la variation du taux ($\\Delta r$) ?",
+      options:["$\\dfrac{\\Delta q}{q} \\approx D \\times \\Delta r$","$\\dfrac{\\Delta q}{q} \\approx -\\dfrac{D \\times \\Delta r}{1+r}$","$\\dfrac{\\Delta q}{q} \\approx -D^2 \\times \\Delta r$","$\\dfrac{\\Delta q}{q} \\approx \\dfrac{D}{1+r} \\times \\Delta r$"], answer:1,
+      expl:"Le prix baisse quand le taux monte. Formule : <b>$\\dfrac{\\Delta q}{q} \\approx -\\dfrac{D}{1+r} \\, \\Delta r$</b> (soit $-D^* \\, \\Delta r$, où $D^* = \\dfrac{D}{1+r}$ est la duration modifiée)." },
+    { id:44, theme:"Duration", level:2, bonus:false, type:"tf",
+      text:"Le dénominateur de la formule de la duration de Macaulay ($\\sum \\dfrac{C_t}{(1+r)^t}$) correspond exactement au prix (valeur actuelle) de l'obligation.",
+      options:["Vrai","Faux"], answer:0,
+      expl:"<b>Vrai</b>. Le dénominateur somme les flux actualisés, ce qui est la définition même du <b>prix (q)</b> du titre." },
+    { id:45, theme:"Duration", level:3, bonus:true, type:"qcm",
+      text:"Calcul: Si une obligation a une duration modifiée $D^* = 4.5$ et que les taux baissent de 2% ($\\Delta r = -2\\%$), quel est l'impact sur le prix ?",
+      options:["-9%","+9%","+4.5%","-2.25%"], answer:1,
+      expl:"$\\dfrac{\\Delta q}{q} \\approx -D^* \\times \\Delta r = -4.5 \\times (-2\\%) = \\mathbf{+9\\%}$." },
+    { id:46, theme:"Duration", level:3, bonus:false, type:"qcm",
+      text:"Calcul: Un portefeuille d'assurance vie a une duration extrême $D^* = 25$. Quel est l'impact sur la valeur si les taux baissent de 2 points ?",
+      options:["+25%","+12.5%","+50%","-50%"], answer:2,
+      expl:"$\\dfrac{\\Delta q}{q} \\approx -25 \\times (-2\\%) = \\mathbf{+50\\%}$." },
+    { id:47, theme:"Duration", level:2, bonus:false, type:"qcm",
+      text:"Intuitivement, pour une dette à rembourser (passif), si le taux d'actualisation r augmente, que se passe-t-il ?",
+      options:["L'épargne initiale nécessaire diminue, donc la valeur actualisée de la dette baisse","La dette augmente proportionnellement","La duration augmente drastiquement","Rien, le passif est immunisé"], answer:0,
+      expl:"Si r monte, un capital placé rapporte plus. Il faut donc une <b>épargne initiale moindre</b> pour rembourser le même flux. La valeur de la dette diminue." },
+    { id:48, theme:"Duration", level:2, bonus:true, type:"qcm",
+      text:"Quel a été l'impact historique des politiques de taux bas/négatifs (QE) depuis 2008 sur la duration des indices obligataires ?",
+      options:["Une forte diminution des durations","Une stabilité parfaite autour de 4.5 ans","Une dérive à la hausse (allongement) des durations","Une décorrélation totale des maturités"], answer:2,
+      expl:"La baisse des taux (QE) a conduit à une <b>dérive à la hausse des durations</b> (ex: l'indice Barclays Aggregate passant de 4.5 à 7 ou plus)." },
+    { id:49, theme:"Duration", level:2, bonus:false, type:"qcm",
+      text:"Quelle est la définition mathématique exacte du poids ($w_{t_i}$) d'un flux dans le calcul de la duration de Macaulay ?",
+      options:["$w_{t_i} = \\dfrac{C_{t_i}}{\\sum C_t}$","$w_{t_i} = \\dfrac{C_{t_i}/(1+r)^{t_i}}{\\text{Prix}}$","$w_{t_i} = \\dfrac{t_i}{\\text{Prix}}$","$w_{t_i} = \\dfrac{(1+r)^{t_i}}{C_{t_i}}$"], answer:1,
+      expl:"Le poids est la Valeur Actuelle du flux à l'instant t divisée par la Valeur Actuelle Totale (le Prix) : <b>$\\dfrac{C_{t_i}/(1+r)^{t_i}}{\\sum_k C_k/(1+r)^k}$</b>." },
+    { id:50, theme:"Duration", level:1, bonus:false, type:"tf",
+      text:"La duration de Macaulay suppose que le taux d'actualisation r est unique et constant pour toutes les échéances (simplification).",
+      options:["Vrai","Faux"], answer:0,
+      expl:"<b>Vrai</b>. C'est l'une des hypothèses (et limites) fondatrices du modèle de Macaulay : une courbe des taux plate et un taux constant." },
+    { id:51, theme:"Duration", level:3, bonus:false, type:"qcm",
+      text:"La question ouverte finale du cours sur la duration s'interroge sur :",
+      options:["La duration des options","La duration des actions","L'impact du risque de crédit","L'inflation"], answer:1,
+      expl:"Le cours conclut en demandant si un univers de placement incluant des actions pose problème pour l'immunisation : <b>Les actions ont-elles une duration ?</b>" },
+
+    // --- THEME 5: ALM / COUVERTURE DE PASSIF ---
+    { id:52, theme:"ALM & Couverture", level:1, bonus:true, type:"qcm",
+      text:"En ALM (Asset Liability Management), comment définit-on le surplus ($\\Pi$) d'un fonds de pension ?",
+      options:["$\\Pi = A - L$","$\\Pi = r_p A - r_L L$","$\\Pi = E[r_p] - E[r_L]$","$\\Pi = A / L$"], answer:1,
+      expl:"Le surplus dynamique se calcule par la différence des rendements appliqués aux volumes respectifs : <b>$\\Pi = r_p A - r_L L$</b>." },
+    { id:53, theme:"ALM & Couverture", level:1, bonus:false, type:"qcm",
+      text:"Que représente le terme $f$ ('Funding Ratio') ?",
+      options:["La duration du fonds","Le ratio d'information du fonds","Le rapport entre l'Actif (A) et les Engagements (L)","Le taux d'actualisation de la dette"], answer:2,
+      expl:"Le funding ratio <b>$f = \\dfrac{A}{L}$</b> mesure la couverture des engagements (si $f < 1$, le fonds est sous-capitalisé)." },
+    { id:54, theme:"ALM & Couverture", level:2, bonus:true, type:"qcm",
+      text:"Dans le modèle, le coût implicite des engagements ($r_L$) est lié à l'indice obligataire ($r_B$) par :",
+      options:["$r_L = r_B$","$r_L = r_B + \\alpha$","$r_L = \\beta_L \\times r_B$","$r_L = r_B / f$"], answer:2,
+      expl:"Le coût est modélisé par une fonction linéaire (un bêta) par rapport au marché obligataire : <b>$r_L = \\beta_L \\, r_B$</b>." },
+    { id:55, theme:"ALM & Couverture", level:2, bonus:false, type:"qcm",
+      text:"Comment se réécrit le surplus moyen ($\\pi = \\Pi / A$) en introduisant le funding ratio $f$ et le bêta du passif ?",
+      options:["$\\pi = r_p - r_B$","$\\pi = r_p - \\dfrac{\\beta_L}{f} \\, r_B$","$\\pi = r_p f - \\beta_L r_B$","$\\pi = r_B - r_p$"], answer:1,
+      expl:"En divisant le surplus par $A$ et en remplaçant $r_L$ : <b>$\\pi = r_p - \\dfrac{\\beta_L}{f} \\, r_B$</b>." },
+    { id:56, theme:"ALM & Couverture", level:3, bonus:false, type:"qcm",
+      text:"Dans la variance du surplus moyen ($\\sigma^2(\\pi)$), quel terme représente la couverture (interaction Actif/Passif) ?",
+      options:["$\\sigma^2(r_p)$","$\\dfrac{\\beta_L^2}{f^2} \\, \\sigma^2(r_B)$","$-2 \\, \\dfrac{\\beta_L}{f} \\, \\text{Cov}(r_p, r_B)$","$+2 \\, \\text{Cov}(r_p, r_B)$"], answer:2,
+      expl:"Le terme de covariance réduit le risque global si les actifs et passifs sont corrélés positivement : <b>$-2 \\, \\dfrac{\\beta_L}{f} \\, \\text{Cov}(r_p, r_B)$</b>." },
+    { id:57, theme:"ALM & Couverture", level:3, bonus:true, type:"qcm",
+      text:"Quelle est la logique mathématique de la couverture obligataire (immunisation) du passif ?",
+      options:["Maximiser le ratio de Sharpe","Avoir un actif ($A$) de duration $D_A$ aussi proche que possible de la duration du passif $D_L$","Vendre l'actif à découvert","Minimiser l'espérance de rendement"], answer:1,
+      expl:"Pour que l'actif et le passif réagissent à l'identique face à une variation des taux, il faut <b>$D_A \\approx D_L$</b>." },
+    { id:58, theme:"ALM & Couverture", level:2, bonus:false, type:"tf",
+      text:"Dans le solveur Excel pour le modèle ALM, la variable 'AssumeNonNeg' (ou paramètre VAD) définit si la vente à découvert est autorisée ou non.",
+      options:["Vrai","Faux"], answer:0,
+      expl:"<b>Vrai</b>. En activant 'AssumeNonNeg = True' (VAD=Faux), on contraint les pondérations $x_j$ à être positives ($x_j \\geq 0$)." },
+    { id:59, theme:"ALM & Couverture", level:2, bonus:false, type:"qcm",
+      text:"Quel critère objectif le fonds de pension cherche-t-il à maximiser dans son programme ?",
+      options:["Le surplus nominal","$E[\\pi] - \\dfrac{\\gamma}{2} \\, \\sigma^2(\\pi)$","La Value At Risk à 1%","Le ratio de Sharpe obligataire"], answer:1,
+      expl:"Le fonds maximise une utilité moyenne-variance sur le surplus moyen : <b>$E[\\pi] - \\dfrac{\\gamma}{2} \\, \\sigma^2(\\pi)$</b>." },
+    { id:60, theme:"ALM & Couverture", level:1, bonus:false, type:"qcm",
+      text:"Dans la contrainte budgétaire du programme du solveur ($\\sum x_j = 1$), que représente $\\sum x_j$ ?",
+      options:["La somme des montants investis (A)","La proportion de capitaux investis dans chaque titre","Le rendement de l'actif","Le ratio d'information"], answer:1,
+      expl:"$\\sum x_j$ représente la <b>somme des parts (poids)</b> du portefeuille investi, qui doit toujours valoir 1 (100%)." },
+
+    // --- RE-FILL (EXTRA QUESTIONS TO HIT 65) ---
+    { id:61, theme:"Ratio d'Information", level:3, bonus:false, type:"qcm",
+      text:"Calcul: t de Student. $IR = 0.4$, horizon $T = 4$ ans. Que vaut $t$ ?",
+      options:["0.1","0.8","1.6","2.4"], answer:1,
+      expl:"$t = IR \\times \\sqrt{T} = 0.4 \\times \\sqrt{4} = 0.4 \\times 2 = \\mathbf{0.8}$ (non significatif)." },
+    { id:62, theme:"Attribution de performance", level:2, bonus:false, type:"tf",
+      text:"Un gérant qui réplique parfaitement les poids de l'indice ($x_p = x_b$) génèrera obligatoirement un terme d'interaction ($I$) non nul s'il sélectionne des titres sous-évalués.",
+      options:["Vrai","Faux"], answer:1,
+      expl:"<b>Faux</b>. L'interaction est $I = (x_p - x_b)(r_p - r_b)$. Si $x_p = x_b$, l'écart de poids est nul, donc <b>l'interaction est nulle</b>, peu importe le succès de sa sélection." },
+    { id:63, theme:"Attribution de performance (TD)", level:2, bonus:false, type:"qcm",
+      text:"Dans le script VBA (procédure calc_brinson), que permet de faire la commande 'resize' associée à 'Set rg' ?",
+      options:["Redimensionner les colonnes Excel","Agrandir la police","Délimiter la plage exacte contenant tous les titres d'un même secteur","Fermer le classeur"], answer:2,
+      expl:"Avec le nombre 'n' trouvé par CountIf, 'resize' permet de <b>définir la plage exacte (rg)</b> des lignes correspondant au secteur en cours." },
+    { id:64, theme:"Gestion Déléguée", level:3, bonus:false, type:"tf",
+      text:"La frontière efficiente 'active' (dans l'espace TE et Excès de Rendement) a la forme d'une parabole horizontale, symétrique par rapport à l'axe des abscisses (TE).",
+      options:["Vrai","Faux"], answer:0,
+      expl:"<b>Vrai</b>. En l'absence de contraintes de signe sur u (vente à découvert autorisée), on peut parier 'pour' ou 'contre' le vecteur d'écarts optimal, créant cette parabole symétrique sur le graphique." },
+    { id:65, theme:"Duration", level:2, bonus:false, type:"qcm",
+      text:"Que traduit une duration Macaulay plus faible (ex: 3 ans contre 7 ans) ?",
+      options:["Un risque de taux plus fort","Une sensibilité moindre aux variations de taux d'intérêt","Une maturité résiduelle infinie","Un coupon obligatoirement nul (zéro-coupon)"], answer:1,
+      expl:"Une duration faible signifie que les flux sont perçus rapidement. Le prix de l'obligation aura donc <b>une sensibilité (volatilité) moindre</b> aux variations de taux." }
+];
+
+/* =========================================================================
+   GAMIFICATION & ETAT (PERSISTANT)
+   ========================================================================= */
+const TITLES = [
+    { threshold: 0,   name: "🌱 Stagiaire" },
+    { threshold: 100, name: "💼 Analyste Junior" },
+    { threshold: 300, name: "📊 Gérant Core-Satellite" },
+    { threshold: 600, name: "💻 Quant Dauphinois" },
+    { threshold: 1000,name: "🎓 Major IEF" },
+    { threshold: 1500,name: "🐺 Goggins de la Finance" }
+];
+
+let userData = {
+    xp: 0,
+    level: 1,
+    bestScore: 0,
+    failed: [],
+    muted: false
+};
+
+let currentSess = { questions: [], idx: 0, score: 0, correct: 0, wrong: 0, combo: 0 };
+let currentQ = null;
+let timerInt = null;
+
+// Audio Context (Synthèse)
+let audioCtx = null;
+function initAudio() {
+    if(!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+    }
+}
+function playTone(freq, type='sine', duration=0.1, vol=0.1) {
+    if(userData.muted) return;
+    initAudio();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + duration);
+}
+function playSuccess() { playTone(523.25, 'sine', 0.1); setTimeout(()=>playTone(659.25, 'sine', 0.2), 100); }
+function playError() { playTone(200, 'sawtooth', 0.2); setTimeout(()=>playTone(150, 'sawtooth', 0.3), 150); }
+function playCombo(comboLevel) { const base = 300; playTone(base + (comboLevel*100), 'sine', 0.2, 0.2); }
+function playLevelUp() {
+    if(userData.muted) return;
+    [440, 554.37, 659.25, 880].forEach((f, i) => setTimeout(() => playTone(f, 'square', 0.15, 0.1), i*100));
+}
+
+// LocalStorage
+function loadData() {
+    try {
+        const d = localStorage.getItem('ief_gdp_data_master');
+        if(d) userData = JSON.parse(d);
+        updateTopBar();
+        document.getElementById('btn-mute').textContent = userData.muted ? "🔇" : "🔊";
+    } catch(e) {}
+}
+function saveData() {
+    try { localStorage.setItem('ief_gdp_data_master', JSON.stringify(userData)); } catch(e){}
+}
+
+/* =========================================================================
+   LOGIQUE APPLICATIVE
+   ========================================================================= */
+function typeset(el) {
+    try { if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([el]).catch(function(){}); } catch(e) {}
+}
+function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(`screen-${id}`).classList.add('active');
+}
+function toggleMute() {
+    userData.muted = !userData.muted;
+    document.getElementById('btn-mute').textContent = userData.muted ? "🔇" : "🔊";
+    saveData();
+}
+function shuffle(array) { return array.sort(() => Math.random() - 0.5); }
+
+function updateTopBar() {
+    // XP & Level
+    let currentLvlObj = TITLES.slice().reverse().find(t => userData.xp >= t.threshold) || TITLES[0];
+    let nextLvlObj = TITLES.find(t => userData.xp < t.threshold);
+    let levelIdx = TITLES.indexOf(currentLvlObj) + 1;
+    
+    // Level Up Check
+    if(levelIdx > userData.level) {
+        userData.level = levelIdx;
+        showToast(currentLvlObj.name);
+        playLevelUp();
+        spawnConfetti(50);
+    }
+
+    document.getElementById('ui-level').textContent = `${currentLvlObj.name} (Lvl ${userData.level})`;
+    
+    if(nextLvlObj) {
+        let diff = nextLvlObj.threshold - currentLvlObj.threshold;
+        let progress = userData.xp - currentLvlObj.threshold;
+        document.getElementById('xp-bar').style.width = `${(progress/diff)*100}%`;
+    } else {
+        document.getElementById('xp-bar').style.width = `100%`; // Max Lvl
+    }
+
+    // Combo
+    const comboEl = document.getElementById('ui-combo');
+    comboEl.textContent = `🔥 x${currentSess.combo}`;
+    if(currentSess.combo >= 3) comboEl.classList.add('combo-active');
+    else comboEl.classList.remove('combo-active');
+
+    // Score
+    document.getElementById('ui-score').textContent = `Score: ${currentSess.score}`;
+    if(currentSess.questions.length > 0) {
+        document.getElementById('ui-progress').textContent = `${currentSess.idx}/${currentSess.questions.length}`;
+    }
+}
+
+function startQuiz(forceMode = null) {
+    const mode = forceMode || document.getElementById('sel-mode').value;
+    const count = parseInt(document.getElementById('sel-count').value);
+    
+    let pool = [...DB];
+    if(mode === 'incontournables') pool = pool.filter(q => q.bonus);
+    if(mode === 'expert') pool = pool.filter(q => q.level === 3);
+    if(mode === 'ratees') pool = pool.filter(q => userData.failed.includes(q.id));
+
+    if(pool.length === 0) {
+        alert("Aucune question trouvée pour ce mode. (Tes ratées sont peut-être vides !)");
+        return;
+    }
+
+    pool = shuffle(pool).slice(0, count);
+    
+    currentSess = { questions: pool, idx: 0, score: 0, correct: 0, wrong: 0, combo: 0 };
+    updateTopBar();
+    showScreen('question');
+    loadQuestion();
+}
+
+function loadQuestion() {
+    if(currentSess.idx >= currentSess.questions.length) return endQuiz();
+    
+    currentQ = currentSess.questions[currentSess.idx];
+    document.getElementById('q-theme').textContent = currentQ.theme;
+    document.getElementById('q-diff').textContent = `Niveau ${currentQ.level}`;
+    document.getElementById('q-diff').className = `tag-diff diff-${currentQ.level}`;
+    
+    const card = document.getElementById('q-card');
+    if(currentQ.bonus) card.classList.add('is-bonus');
+    else card.classList.remove('is-bonus');
+
+    document.getElementById('q-text').innerHTML = currentQ.text;
+    document.getElementById('q-feedback').classList.remove('show');
+    document.getElementById('q-actions').style.display = "flex";
+
+    const optGrid = document.getElementById('q-options');
+    optGrid.innerHTML = '';
+    currentQ.options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.innerHTML = `<span class="shortcut-badge">${idx+1}</span> ${opt}`;
+        btn.onclick = () => handleAnswer(idx);
+        optGrid.appendChild(btn);
+    });
+    
+    updateTopBar();
+    initAudio();
+    typeset(document.getElementById('screen-question'));
+}
+
+function handleAnswer(choiceIdx) {
+    document.getElementById('q-actions').style.display = "none";
+    const btns = document.querySelectorAll('.option-btn');
+    btns.forEach(b => b.onclick = null); // Disable click
+
+    const fb = document.getElementById('q-feedback');
+    const fbTitle = document.getElementById('fb-title');
+    const fbDesc = document.getElementById('fb-desc');
+    const fbPts = document.getElementById('fb-pts');
+
+    fb.className = 'feedback-box show';
+    fbDesc.innerHTML = currentQ.expl;
+    typeset(fbDesc);
+
+    // SKIP
+    if(choiceIdx === -1) {
+        currentSess.combo = 0;
+        fb.classList.add('feedback-skip');
+        fbTitle.textContent = "Passé (0 pt)";
+        fbPts.textContent = "";
+        btns[currentQ.answer].style.borderColor = varColor('--text-muted');
+        if(!userData.failed.includes(currentQ.id)) userData.failed.push(currentQ.id);
+    } 
+    // CHECK
+    else {
+        btns[choiceIdx].classList.add('selected');
+        if(choiceIdx === currentQ.answer) {
+            // CORRECT
+            btns[choiceIdx].classList.add('correct');
+            currentSess.score += 0.5;
+            currentSess.correct++;
+            currentSess.combo++;
+            
+            fb.classList.add('feedback-correct');
+            fbTitle.textContent = "Bonne réponse !";
+            fbPts.textContent = "+0.5 pts";
+            
+            let xpGained = 10 * (currentQ.bonus ? 2 : 1) + Math.min(currentSess.combo, 16);
+            userData.xp += xpGained;
+            showFloatingText(`+${xpGained} XP`, btns[choiceIdx]);
+
+            playSuccess();
+            if([3,5,8,12].includes(currentSess.combo)) {
+                playCombo(currentSess.combo);
+                spawnConfetti(20);
+                showToast(`🔥 Combo x${currentSess.combo} !`);
+            }
+
+            // Remove from failed list if it was there
+            userData.failed = userData.failed.filter(id => id !== currentQ.id);
+            
+        } else {
+            // WRONG
+            btns[choiceIdx].classList.add('wrong');
+            btns[currentQ.answer].classList.add('correct');
+            document.getElementById('q-card').classList.add('shake');
+            setTimeout(()=> document.getElementById('q-card').classList.remove('shake'), 500);
+
+            currentSess.score -= 0.25;
+            currentSess.wrong++;
+            currentSess.combo = 0;
+
+            fb.classList.add('feedback-wrong');
+            fbTitle.textContent = "Mauvaise réponse";
+            fbPts.textContent = "-0.25 pts";
+            playError();
+
+            if(!userData.failed.includes(currentQ.id)) userData.failed.push(currentQ.id);
+        }
+    }
+    saveData();
+    updateTopBar();
+    document.getElementById('btn-next').focus(); // Ready for enter
+}
+
+function nextQuestion() {
+    currentSess.idx++;
+    loadQuestion();
+}
+
+function endQuiz() {
+    updateTopBar();
+    showScreen('end');
+    
+    let maxScore = currentSess.questions.length * 0.5;
+    let finalScore = Math.max(0, currentSess.score);
+    let equiv20 = (finalScore / maxScore) * 20;
+
+    document.getElementById('end-score').textContent = `${equiv20.toFixed(1)} / 20`;
+    document.getElementById('end-accuracy').textContent = `${Math.round((currentSess.correct/currentSess.questions.length)*100)}%`;
+    document.getElementById('end-correct').textContent = currentSess.correct;
+    document.getElementById('end-wrong').textContent = currentSess.wrong;
+
+    // Badges
+    const badgeCtn = document.getElementById('end-badges');
+    badgeCtn.innerHTML = '';
+    if(currentSess.wrong === 0 && currentSess.questions.length >= 10) 
+        badgeCtn.innerHTML += `<div class="badge">🏆 Sans-faute</div>`;
+    if(equiv20 >= 17) 
+        badgeCtn.innerHTML += `<div class="badge">🎓 Niveau Examen (Major)</div>`;
+    else if(equiv20 >= 14)
+        badgeCtn.innerHTML += `<div class="badge">🎓 Niveau Examen (Bien)</div>`;
+    
+    let bonusDone = currentSess.questions.filter(q => q.bonus).length;
+    if(bonusDone > 0) badgeCtn.innerHTML += `<div class="badge">⚡ ${bonusDone} Bonus vus</div>`;
+
+    if(equiv20 >= 13) spawnConfetti(100);
+
+    // Missed
+    const missedList = document.getElementById('end-missed');
+    const missedCtn = document.getElementById('missed-items-container');
+    const btnRetry = document.getElementById('btn-retry-missed');
+    missedCtn.innerHTML = '';
+    
+    let missedInSess = currentSess.questions.filter(q => userData.failed.includes(q.id));
+    if(missedInSess.length > 0) {
+        missedList.style.display = 'block';
+        btnRetry.style.display = 'block';
+        missedInSess.forEach(q => {
+            missedCtn.innerHTML += `
+                <div class="missed-item">
+                    <p><b>Thème:</b> ${q.theme}</p>
+                    <p>${q.text}</p>
+                    <p style="color:var(--success); font-weight:bold;">${q.options[q.answer]}</p>
+                    <p style="color:var(--text-muted); font-size:0.8rem; margin-top:5px;">${q.expl}</p>
+                </div>
+            `;
+        });
+        typeset(missedCtn);
+    } else {
+        missedList.style.display = 'none';
+        btnRetry.style.display = 'none';
+    }
+}
+
+// Key bindings
+document.addEventListener('keydown', (e) => {
+    if(document.getElementById('screen-question').classList.contains('active')) {
+        const isActionVisible = document.getElementById('q-actions').style.display !== "none";
+        
+        if(isActionVisible) {
+            if(['1','2','3','4'].includes(e.key)) {
+                let idx = parseInt(e.key) - 1;
+                if(idx < currentQ.options.length) handleAnswer(idx);
+            }
+            if(e.key.toLowerCase() === 'p') handleAnswer(-1);
+        } else {
+            if(e.key === 'Enter') nextQuestion();
+        }
+    }
+});
+
+// Effets visuels
+function showFloatingText(text, targetEl) {
+    const el = document.createElement('div');
+    el.className = 'floating-xp';
+    el.textContent = text;
+    const rect = targetEl.getBoundingClientRect();
+    el.style.left = (rect.left + rect.width/2 - 20) + 'px';
+    el.style.top = rect.top + 'px';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1000);
+}
+
+function spawnConfetti(amount) {
+    if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    for(let i=0; i<amount; i++) {
+        let el = document.createElement('div');
+        el.className = 'confetti';
+        el.style.left = 50 + (Math.random() * 50 - 25) + 'vw';
+        el.style.top = 20 + 'vh';
+        el.style.backgroundColor = ['#f59e0b', '#3b82f6', '#10b981', '#ef4444'][Math.floor(Math.random()*4)];
+        document.body.appendChild(el);
+        
+        let vx = (Math.random() - 0.5) * 15;
+        let vy = Math.random() * -10 - 5;
+        
+        function anim() {
+            vy += 0.5; // gravity
+            let top = parseFloat(el.style.top) + vy;
+            let left = parseFloat(el.style.left) + vx;
+            el.style.top = top + 'px';
+            el.style.left = left + 'px';
+            
+            if(top > window.innerHeight) el.remove();
+            else requestAnimationFrame(anim);
+        }
+        requestAnimationFrame(anim);
+    }
+}
+
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.innerHTML = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Init
+window.onload = loadData;
+</script>
+</body>
+</html>
